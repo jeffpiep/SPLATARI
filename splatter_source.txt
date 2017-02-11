@@ -1,0 +1,52 @@
+'SPLATARI
+'simplistic SPLATOON for atari 8-bit BASIC 10-liner
+$options +optimize, optimize=-convert_percent-const_replace
+
+'player=adr("\00\80\80\80\80\80\80\80\00\01\01\01\01\01\01\01\01\00")
+player=adr("\00\00\18\18\18\FF\FF\18\18\18\00\00\01\01\01\01\01\01\01\01\00")
+
+'set up memory
+
+'set up display
+GR.8:GR.5 : rem GR.1+16
+
+'set up sprites
+PM=$AC00
+MOVE player,PM,16:REM				COPY THE SPRITE INTO THE MEMORY AT PM
+POKE 704,15:rem						color of player 0						
+POKE 705,5:rem						color of player 1	
+'TODO: combine previous two pokes into a DPOKE for savings					
+POKE 54279,PM/256:REM              Tell ANTIC where PM RAM is
+POKE 53277,3:REM                      Enable PM display
+POKE 559,46:REM                     Enable PM DMA with 2-line res
+
+
+'initialize game  
+c.1:plot0,0:drawto79,0:drawto79,47:drawto0,47:drawto0,0
+minx=49:maxx=199
+miny=16:maxy=101
+X=minx:Y=miny:rem						location of the player
+aix=maxx:aiy=maxy:rem					location of AI
+'game loop
+do
+
+'MOVE PM+8,PM+$200+Y,9:rem			set the Y position by moving player in buffer
+MOVE PM,PM+$200+Y,12:rem			set the Y position by moving player in buffer $200
+MOVE PM,PM+$280+AIY,12:rem			set the Y position by moving player in buffer $200
+POKE $D000,X: rem					set the X position of the player
+POKE $D001,AIX: rem					set the X position of the player
+
+' joystick input
+S=STICK(0):LR=(S&4=4)-(S&8=8):UD=(S&1=0)-(S&2=0):rem create +/1 values for left/right and up/down	
+loc.sx,sy,pc:rem find the color you are sitting in
+speed=1+(pc=1)
+X=X*((X>minx)&(X<maxx))+minx*(x<=minx)+maxx*(x>=maxx)+LR*speed:rem limit x movement and move left/right
+Y=Y*((Y>miny)&(Y<maxy))+miny*(Y<=miny)+maxy*(Y>=maxy)-UD*speed:rem limit y and move up/down - axis flipped
+sx=x/2-22.5:sy=y/2-6:rem compute graphics 5 coordinates of sprite
+if strig(0)=0:splatx=sx+8*LR:splaty=sy-4*UD: FORI=1TO3:CIRCLE splatx*(splatx>=0),splaty*(splaty>=0),I:NEXTI :endif
+
+    
+
+
+'?x,y,sX,sY
+loop
