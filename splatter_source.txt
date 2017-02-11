@@ -3,7 +3,7 @@
 $options +optimize, optimize=-convert_percent-const_replace
 dim X(1),Y(1)
 'player=adr("\00\80\80\80\80\80\80\80\00\01\01\01\01\01\01\01\01\00")
-player=adr("\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00\01\01\01\01\01\01\01\01\00\00\00\00")
+player=adr("\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00")
 
 'set up memory
 
@@ -14,7 +14,7 @@ GR.8:GR.5 : rem GR.1+16
 PM=$AC00
 MOVE player,PM,16:REM				COPY THE SPRITE INTO THE MEMORY AT PM
 POKE 704,15:rem						color of player 0						
-POKE 705,5:rem						color of player 1	
+POKE 705,35:rem						color of player 1	
 'TODO: combine previous two pokes into a DPOKE for savings					
 POKE 54279,PM/256:REM              Tell ANTIC where PM RAM is
 POKE 53277,3:REM                      Enable PM display
@@ -24,12 +24,12 @@ POKE 559,46:REM                     Enable PM DMA with 2-line res
 'initialize game  
 c.3:plot0,0:drawto79,0:drawto79,47:drawto0,47:drawto0,0
 minx=2:maxx=77
-miny=2:maxy=37
+miny=1:maxy=37
 X(0)=minx:Y(0)=miny:rem						location of the player
 X(1)=maxx:Y(1)=maxy:rem					location of AI
 'game loop
 do
-for p=0 to 1
+p=not p
 c.p+1:rem change color
 
 
@@ -49,6 +49,6 @@ POKE $D000+p,X(p)*2+45: rem					set the X position of the player
 'POKE $D001,AIX: rem					set the X position of the player
     
 
-next p
+
 '?x,y,sX,sY
 loop
