@@ -1,7 +1,7 @@
 'SPLATARI
 'simplistic SPLATOON for atari 8-bit BASIC 10-liner
 $options +optimize, optimize=-convert_percent-const_replace
-dim X(1),Y(1)
+dim X(1),Y(1),ink(1), health(1)
 'player=adr("\00\80\80\80\80\80\80\80\00\01\01\01\01\01\01\01\01\00")
 player=adr("\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00")
 
@@ -24,9 +24,16 @@ POKE 559,46:REM                     Enable PM DMA with 2-line res
 'initialize game  
 c.3:plot0,0:drawto79,0:drawto79,47:drawto0,47:drawto0,0
 minx=2:maxx=77
-miny=1:maxy=37
+miny=2:maxy=37
 X(0)=minx:Y(0)=miny:rem						location of the player
 X(1)=maxx:Y(1)=maxy:rem					location of AI
+maxink=10:maxhealth=10
+ink(0)=maxink:ink(1)=maxink
+health(0)=maxhealth:health(1)=maxhealth
+poke 752,1
+?"PLAYER","HEALTH","INK"
+?"  1",,,"TIMER"
+?"  2"
 'game loop
 do
 p=not p
@@ -37,18 +44,30 @@ c.p+1:rem change color
 S=STICK(p):LR=(S&4=4)-(S&8=8):UD=(S&1=0)-(S&2=0):rem create +/1 values for left/right and up/down	
 loc.X(p),Y(p),pc:rem find the color you are sitting in
 speed=(1+(pc=p+1))
+health(p)=health(p)-(pc=(not p)+1)
+ink=ink(p)
+ink(p)=(ink<maxink)*(ink+speed-1)+maxink*(ink>=maxink)
 U=X(p):V=Y(p)
 X(p)=U*((U>minx)&(U<maxx))+minx*(U<=minx)+maxx*(U>=maxx)+LR*speed:rem limit x movement and move left/right
 Y(p)=V*((V>miny)&(V<maxy))+miny*(V<=miny)+maxy*(V>=maxy)-UD*speed:rem limit y and move up/down - axis flipped
-if strig(p)=0:splatx=X(p)+8*LR:splaty=Y(p)-4*UD: FORI=1TO3:CIRCLE splatx*(splatx>=0),splaty*(splaty>=0),I:NEXTI :endif
+if (strig(p)=0)&(ink(p)>0):ink(p)=ink(p)-1:splatx=X(p)+8*LR:splaty=Y(p)-4*UD: FORI=1TO2:CIRCLE splatx*(splatx>=0),splaty*(splaty>=0),I:NEXTI :endif
+if health(p)=0
+	X(p)=minx*(not p)+maxx*p
+	health(p)=maxhealth
+endif
+
 dir=12*p
 'MOVE PM+8,PM+$200+Y,9:rem			set the Y position by moving player in buffer
 MOVE player+dir,PM+$200+$80*p+Y(p)*2+12,16:rem			set the Y position by moving player in buffer $200
 'MOVE PM,PM+$280+AIY,12:rem			set the Y position by moving player in buffer $200
 POKE $D000+p,X(p)*2+45: rem					set the X position of the player
 'POKE $D001,AIX: rem					set the X position of the player
-    
 
+POKE 656,1+p
+POKE 657,12:?health(p);" ";,ink(p);" ";
+IF P
+	POKE 657,32:?TIME DIV 60;" ";
+ENDIF
 
 '?x,y,sX,sY
 loop
