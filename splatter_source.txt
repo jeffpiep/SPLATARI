@@ -31,11 +31,13 @@ maxink=10:maxhealth=10
 ink(0)=maxink:ink(1)=maxink
 health(0)=maxhealth:health(1)=maxhealth
 poke 752,1
-?"PLAYER","HEALTH","INK"
-?"  1",,,"TIMER"
+?"PLAYER","HEALTH","INK","FINAL"
+?"  1"
 ?"  2"
+?,"TIMER:";
+basetime=time div 60 +180
 'game loop
-do
+repeat
 p=not p
 c.p+1:rem change color
 
@@ -65,9 +67,27 @@ POKE $D000+p,X(p)*2+45: rem					set the X position of the player
 
 POKE 656,1+p
 POKE 657,12:?health(p);" ";,ink(p);" ";
-IF P
-	POKE 657,32:?TIME DIV 60;" ";
-ENDIF
+xtime=basetime-(TIME DIV 60)
+POKE 656,3
+POKE 657,22:?xtime;" ";
+
+
 
 '?x,y,sX,sY
-loop
+until xtime=0
+DPOKE $D000,0: rem					set the X position of the player
+X(0)=0:X(1)=0
+c.3
+FOR I=1 TO 78
+	FOR J=1 TO 39
+		loc.I,J,pc
+		plot i,j
+		IF PC>0
+			X(pc-1)=X(pc-1)+1
+			POKE 656,pc
+			POKE 657,32:?X(pc-1);
+		endif
+	n.j
+n.i
+winner=(x(1)>x(0))+1:c.winner:text 10,10,winner:text 18,10," WINS!"
+do:loop
