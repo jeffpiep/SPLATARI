@@ -1,93 +1,126 @@
-'SPLATARI
-'simplistic SPLATOON for atari 8-bit BASIC 10-liner
+'
+'					SPLATARI
+'
+'Simplistic SPLATOON for ATARI 800XL 8-bit BASIC 10-liner
+'Two-player game with joysticks
+'
+'Jeff Piepmeier
+'February 12, 2017
+'http://jeffpiepmeier.blogspot.com/SPLATARI
+'http://github.com/jeffpiep/SPLATARI
+'
+'Parsed with TurboBASIC XL Parser Tool 
+'https://github.com/dmsc/tbxl-parser
+'
 $options +optimize, optimize=-convert_percent-const_replace
-dim X(1),Y(1),ink(1), health(1)
-'player=adr("\00\80\80\80\80\80\80\80\00\01\01\01\01\01\01\01\01\00")
-player=adr("\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00\18\18\18\FF\FF\18\18\18\00\00\00\00")
 
 'set up memory
+DIM X(1),Y(1),ink(1),health(1)
+player=adr("\00\00\00\00\18\3C\7E\FF\DB\54\54\54\00\00\00\00\18\3C\7E\FF\DB\54\54\54\00\00\00\00\18\3C\7E\FF\DB\54\54\54\00\00\00\00")
 
 'set up display
-GR.8:GR.5 : rem GR.1+16
+GR.8:rem 					clear out 8 kbytes
+GR.5:rem					use 80 x 40 pixels, 4 colors, 4 lines of text
 
 'set up sprites
-PM=$AC00
-MOVE player,PM,16:REM				COPY THE SPRITE INTO THE MEMORY AT PM
-POKE 704,15:rem						color of player 0						
-POKE 705,35:rem						color of player 1	
-'TODO: combine previous two pokes into a DPOKE for savings					
-POKE 54279,PM/256:REM              Tell ANTIC where PM RAM is
-POKE 53277,3:REM                      Enable PM display
-POKE 559,46:REM                     Enable PM DMA with 2-line res
+PM=$AC00:rem				I know this is where it should start on 64k 800xl
+DPOKE 704,$230F :rem		color of player 1 & 0						
+POKE 54279,PM/256:REM   	tell ANTIC where PM RAM is
+POKE 53277,3:REM			Enable PM display
+POKE 559,46:REM             Enable PM DMA with 2-line res
 
+'draw a box around playfield  
+c.3
+plot0,0
+drawto79,0
+drawto79,39
+drawto0,39
+drawto0,0
 
-'initialize game  
-c.3:plot0,0:drawto79,0:drawto79,47:drawto0,47:drawto0,0
-minx=2:maxx=77
-miny=2:maxy=37
-X(0)=minx:Y(0)=miny:rem						location of the player
-X(1)=maxx:Y(1)=maxy:rem					location of AI
-maxink=10:maxhealth=10
-ink(0)=maxink:ink(1)=maxink
-health(0)=maxhealth:health(1)=maxhealth
-poke 752,1
-?"PLAYER","HEALTH","INK","FINAL"
-?"  1"
-?"  2"
-?,"TIMER:";
-basetime=time div 60 +180
+'set up locations, ink and health fills
+minx=3:maxx=76:rem			limits of playfield
+miny=3:maxy=36
+X(0)=minx:Y(0)=miny:rem		location of player 1
+X(1)=maxx:Y(1)=maxy:rem		location of player 2
+maxink=10:rem				full ink amount
+ink(0)=maxink
+ink(1)=maxink
+maxhealth=10:rem			full health amount
+health(0)=maxhealth
+health(1)=maxhealth
+
+'initialize scorebox
+poke 752,1:rem				turn of cursor
+?"PLAYER","HEALTH","  INK","FINAL"
+?"  1",,," ---"
+?"  2",,," ---"
+?,"   TIMER:";
+
+'start the game timer for 180 second game
+basetime=time div 60 + 180
+
 'game loop
 repeat
-p=not p
-c.p+1:rem change color
-
-
-' joystick input
-S=STICK(p):LR=(S&4=4)-(S&8=8):UD=(S&1=0)-(S&2=0):rem create +/1 values for left/right and up/down	
-loc.X(p),Y(p),pc:rem find the color you are sitting in
-speed=(1+(pc=p+1))
-health(p)=health(p)-(pc=(not p)+1)
+p=not p:rem					alternate player processing every pass of loop
+'process joystick input
+S=STICK(p)
+LR=(S&4=4)-(S&8=8)
+UD=(S&1=0)-(S&2=0):rem 		create +/1 values for left/right and up/down	
+'find the color you are sitting in and take action
+loc.X(p),Y(p),pc
+speed=(1+(pc=p+1)):rem		go faster if you are in your own ink
+health(p)=health(p)-(pc=(not p)+1):rem lose health if you are in other ink
 ink=ink(p)
-ink(p)=(ink<maxink)*(ink+speed-1)+maxink*(ink>=maxink)
+ink(p)=(ink<maxink)*(ink+speed-1)+maxink*(ink>=maxink):rem get ink if in your own color
+'move the player
 U=X(p):V=Y(p)
 X(p)=U*((U>minx)&(U<maxx))+minx*(U<=minx)+maxx*(U>=maxx)+LR*speed:rem limit x movement and move left/right
 Y(p)=V*((V>miny)&(V<maxy))+miny*(V<=miny)+maxy*(V>=maxy)-UD*speed:rem limit y and move up/down - axis flipped
-if (strig(p)=0)&(ink(p)>0):ink(p)=ink(p)-1:splatx=X(p)+8*LR:splaty=Y(p)-4*UD: FORI=1TO2:CIRCLE splatx*(splatx>=0),splaty*(splaty>=0),I:NEXTI :endif
+'splatter ink
+if (strig(p)=0)&(ink(p)>0)
+	c.p+1:rem 				set color
+	ink(p)=ink(p)-1:rem		use ink
+	splatx=X(p)+8*LR:rem	splatter ahead of player direction
+	splaty=Y(p)-4*UD
+	FOR I=1 TO 2:rem		create splat
+		CIRCLE splatx*(splatx>=0),splaty*(splaty>=0),I
+	NEXT I
+endif
+'if at ZERO health, get knocked back to your side
 if health(p)=0
 	X(p)=minx*(not p)+maxx*p
 	health(p)=maxhealth
 endif
-
-dir=12*p
-'MOVE PM+8,PM+$200+Y,9:rem			set the Y position by moving player in buffer
-MOVE player+dir,PM+$200+$80*p+Y(p)*2+12,16:rem			set the Y position by moving player in buffer $200
-'MOVE PM,PM+$280+AIY,12:rem			set the Y position by moving player in buffer $200
+'update position of sprites
+MOVE player+12+12*LR,PM+$200+$80*p+Y(p)*2+10,16:rem			set the Y position by moving player in buffer $200
 POKE $D000+p,X(p)*2+45: rem					set the X position of the player
-'POKE $D001,AIX: rem					set the X position of the player
-
-POKE 656,1+p
-POKE 657,12:?health(p);" ";,ink(p);" ";
+'update scorebox
+POKE 656,1+p:rem			set line number based on player number
+POKE 657,14:?health(p);" ";,ink(p);" ";
+'update game timer
 xtime=basetime-(TIME DIV 60)
 POKE 656,3
-POKE 657,22:?xtime;" ";
-
-
-
-'?x,y,sX,sY
+POKE 657,21:?xtime;" ";
+'keep playing until out of time
 until xtime=0
-DPOKE $D000,0: rem					set the X position of the player
+DPOKE $D000,0: rem					move players off screen
 X(0)=0:X(1)=0
 c.3
-FOR I=1 TO 78
-	FOR J=1 TO 39
+FOR J=1 TO 38
+	FOR I=1 TO 78
 		loc.I,J,pc
 		plot i,j
 		IF PC>0
 			X(pc-1)=X(pc-1)+1
 			POKE 656,pc
-			POKE 657,32:?X(pc-1);
+			POKE 657,33:?X(pc-1);"  ";
 		endif
-	n.j
-n.i
-winner=(x(1)>x(0))+1:c.winner:text 10,10,winner:text 18,10," WINS!"
+	n.i
+n.j
+if x(1)=x(0)
+	text 24,10,"TIE!"
+else
+	winner=(x(1)>x(0))+1:c.winner:text 13,10,winner:text 27,10,"WINS!"
+endif
+'while strig(0):wend:run
 do:loop
