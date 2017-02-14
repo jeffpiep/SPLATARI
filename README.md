@@ -1,5 +1,5 @@
 # SPLATARI
-SPLATARI is Splatoon for 2 players in 8 bits for the ATARI 800XL written in TurboBASIC XL
+SPLATARI is Splatoon for 2 players in 8 bits for the ATARI 800XL written in TurboBASIC XL. This is an entry to the [BASIC 10Liners 2017](http://gkanold.wixsite.com/homeputerium/basic-10liners-2017) competition.
 
 Download the ATR file and play on your favorite 800XL emulator (e.g., Altirra).
 
